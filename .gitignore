@@ -1,0 +1,20 @@
+# Pythonキャッシュファイル
+__pycache__/
+*.py[cod]
+
+# 仮想環境関連
+bin/
+include/
+lib/
+share/
+pyvenv.cfg
+
+# 実行結果・動画ファイル
+runs/
+*.mp4
+
+# モデルファイル（大きいのでGit管理しない場合）
+yolo11n.pt
+
+test.py
+cameratest.py
