@@ -1,15 +1,23 @@
 from ultralytics import YOLO
 import cv2
 from datetime import datetime
+import csv
+import os
 
 model = YOLO("yolo11n.pt")  
-cap = cv2.VideoCapture(0, cv2.CAP_AVFOUNDATION)
+cap = cv2.VideoCapture(1, cv2.CAP_AVFOUNDATION)
 
 counted_ids = set()
-hourly_counts = {}
+hourly_count = 0
 daily_count = 0
-
 previous_day_key = datetime.now().date()
+previous_hour_key = datetime.now().strftime("%Y-%m-%d %H")
+
+# CSVファイルがない場合は作成
+if not os.path.exists("counts.csv"):  
+    with open("counts.csv", mode='w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(["Date Hour", "Visitor Count"])
 
 if not cap.isOpened():
     print("Cannot open camera")
@@ -28,8 +36,16 @@ while cap.isOpened():
     # 日付が変わったらカウントをリセット
     if day_key != previous_day_key:
         daily_count = 0
-        hourly_counts = {}
+        counted_ids = set()
         previous_day_key = day_key
+
+    # 時間が変わったらCSVに保存
+    if hour_key != previous_hour_key:
+        with open("counts.csv", mode='a', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow([previous_hour_key, hourly_count])
+        hourly_count = 0
+        previous_hour_key = hour_key
 
     # トラッキング付き推論（追跡モード）
     results = model.track(frame, persist=True)
@@ -46,9 +62,7 @@ while cap.isOpened():
             if model.names[int(cls_id)] == "person":
                 if track_id not in counted_ids:
                     counted_ids.add(track_id)
-                    if hour_key not in hourly_counts:
-                        hourly_counts[hour_key] = 0
-                    hourly_counts[hour_key] += 1
+                    hourly_count += 1
                     daily_count += 1
 
 
