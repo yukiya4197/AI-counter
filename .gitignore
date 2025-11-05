@@ -12,11 +12,20 @@ pyvenv.cfg
 # 実行結果・動画ファイル
 runs/
 *.mp4
+/datasets/
+/yolo_out/
+.DS_Store
 
 # モデルファイル（大きいのでGit管理しない場合）
 yolo11n.pt
+yolo11l.pt
+yolo11x.pt
+yolov8n.pt
+
+
 
 test.py
 cameratest.py
+model_test.py
 
 counts.csv

@@ -3,15 +3,21 @@ import cv2
 from datetime import datetime
 import csv
 import os
+import time
 
-model = YOLO("yolo11n.pt")  
+model = YOLO("yolov8n.pt")  
 cap = cv2.VideoCapture(1, cv2.CAP_AVFOUNDATION)
+# cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+# cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
 counted_ids = set()
 hourly_count = 0
 daily_count = 0
 previous_day_key = datetime.now().date()
 previous_hour_key = datetime.now().strftime("%Y-%m-%d %H")
+frame_count = 0
+fps = 0
+prev_time = time.time()
 
 # CSVファイルがない場合は作成
 if not os.path.exists("counts.csv"):  
@@ -28,6 +34,14 @@ while cap.isOpened():
     if not ret:
         print("Can't receive frame (stream end?). Exiting ...")
         break
+    # FPSを計算（1秒ごとに更新）
+    frame_count += 1
+    now_time = time.time()
+    elapsed = now_time - prev_time
+    if elapsed >= 1.0:
+        fps = frame_count / elapsed
+        frame_count = 0
+        prev_time = now_time
     # 現在の時刻取得
     now = datetime.now()
     day_key = now.strftime("%Y-%m-%d")
@@ -48,7 +62,7 @@ while cap.isOpened():
         previous_hour_key = hour_key
 
     # トラッキング付き推論（追跡モード）
-    results = model.track(frame, persist=True)
+    results = model.track(frame, persist=True, classes=[0], imgsz=320, conf=0.45)
 
     # 描画フレーム生成
     annotated_frame = results[0].plot()
@@ -69,6 +83,10 @@ while cap.isOpened():
     # 累計表示
     cv2.putText(annotated_frame, f"{day_key} Total Visitors: {daily_count}",
                 (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 128, 0), 2)
+    # FPS表示
+    cv2.putText(annotated_frame, f"FPS: {fps:.2f}",
+                (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)    
+
 
     cv2.imshow("Tracking Count", annotated_frame)
 
