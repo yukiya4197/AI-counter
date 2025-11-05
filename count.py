@@ -15,6 +15,7 @@ hourly_count = 0
 daily_count = 0
 previous_day_key = datetime.now().date()
 previous_hour_key = datetime.now().strftime("%Y-%m-%d %H")
+
 frame_count = 0
 fps = 0
 prev_time = time.time()
@@ -28,12 +29,18 @@ if not os.path.exists("counts.csv"):
 if not cap.isOpened():
     print("Cannot open camera")
     exit()
+# ---- 描画を間引く設定 ----
+DRAW_EVERY_N = 3  # 3フレームに1回だけ plot() する
+frame_idx = 0
+last_drawn = None
+
 
 while cap.isOpened():
     ret, frame = cap.read()
     if not ret:
         print("Can't receive frame (stream end?). Exiting ...")
         break
+    frame_idx += 1
     # FPSを計算（1秒ごとに更新）
     frame_count += 1
     now_time = time.time()
@@ -66,8 +73,17 @@ while cap.isOpened():
 
     # 描画フレーム生成
     annotated_frame = results[0].plot()
+    
+     # ---- plot()を間引き ----
+    if frame_idx % DRAW_EVERY_N == 0:
+        annotated_frame = results[0].plot()
+        last_drawn = annotated_frame
 
-    # トラッキングIDの取得
+    # ---- 最新の描画結果を表示 ----
+    display_frame = last_drawn if last_drawn is not None else frame.copy()
+
+
+    # カウント処理
     boxes = results[0].boxes
     if boxes.id is not None and boxes.cls is not None:
         track_ids = boxes.id.cpu().numpy().astype(int).tolist()
